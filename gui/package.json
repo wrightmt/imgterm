@@ -11,11 +11,12 @@
     "dist:linux": "electron-builder --linux",
     "dist:mac": "electron-builder --mac"
   },
+  "author": "wrightmt",
   "dependencies": {
-    "electron": "^29.0.0",
     "ssh2": "^1.15.0"
   },
   "devDependencies": {
+    "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
