@@ -32,18 +32,15 @@
       "index.html",
       "style.css"
     ],
-    "extraResources": [
-      {
-        "from": "../target/release/imgterm${env.BINARY_EXT}",
-        "to": "imgterm${env.BINARY_EXT}"
-      }
-    ],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "extraResources": [
+        { "from": "../target/release/imgterm.exe", "to": "imgterm.exe" }
+      ]
     },
     "linux": {
       "target": [
@@ -51,14 +48,20 @@
         { "target": "deb", "arch": ["x64"] }
       ],
       "category": "Utility",
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "extraResources": [
+        { "from": "../target/release/imgterm", "to": "imgterm" }
+      ]
     },
     "mac": {
       "target": [
         { "target": "dmg", "arch": ["x64", "arm64"] }
       ],
       "category": "public.app-category.utilities",
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "extraResources": [
+        { "from": "../target/release/imgterm", "to": "imgterm" }
+      ]
     },
     "nsis": {
       "oneClick": false,

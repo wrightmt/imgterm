@@ -92,7 +92,6 @@ jobs:
       - name: Package
         working-directory: gui
         env:
-          BINARY_EXT: ${{ matrix.ext }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder ${{ matrix.electron_args }} --publish never
 
