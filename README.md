@@ -2,7 +2,9 @@
 
 Convert any image to ANSI terminal art and deploy it as your SSH server's MOTD (message of the day).
 
-![imgterm GUI screenshot](docs/screenshot.png)
+![imgterm GUI](docs/imgterm_GUI.png)
+
+![imgterm terminal output](docs/imgterm_terminal.png)
 
 ## Features
 
