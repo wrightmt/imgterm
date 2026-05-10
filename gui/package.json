@@ -11,7 +11,9 @@
     "dist:linux": "electron-builder --linux",
     "dist:mac": "electron-builder --mac"
   },
-  "author": "wrightmt",
+  "author": { "name": "wrightmt", "email": "wrightmt@gmail.com" },
+  "homepage": "https://github.com/wrightmt/imgterm",
+  "repository": { "type": "git", "url": "https://github.com/wrightmt/imgterm.git" },
   "dependencies": {
     "ssh2": "^1.15.0"
   },
