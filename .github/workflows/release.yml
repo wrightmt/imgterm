@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-rust:
+    name: Build imgterm CLI (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: imgterm.exe
+            ext: .exe
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary: imgterm
+            ext: ""
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            binary: imgterm
+            ext: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            binary: imgterm
+            ext: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: imgterm-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.binary }}
+
+  build-gui:
+    name: Package GUI (${{ matrix.os }})
+    needs: build-rust
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rust_target: x86_64-pc-windows-msvc
+            ext: .exe
+            electron_args: --win
+          - os: ubuntu-latest
+            rust_target: x86_64-unknown-linux-gnu
+            ext: ""
+            electron_args: --linux
+          - os: macos-latest
+            rust_target: x86_64-apple-darwin
+            ext: ""
+            electron_args: --mac --x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download imgterm binary
+        uses: actions/download-artifact@v4
+        with:
+          name: imgterm-${{ matrix.rust_target }}
+          path: target/release/
+
+      - name: Mark binary executable (non-Windows)
+        if: runner.os != 'Windows'
+        run: chmod +x target/release/imgterm
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install GUI dependencies
+        working-directory: gui
+        run: npm ci
+
+      - name: Package
+        working-directory: gui
+        env:
+          BINARY_EXT: ${{ matrix.ext }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder ${{ matrix.electron_args }} --publish never
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.os }}
+          path: |
+            gui/dist/*.exe
+            gui/dist/*.AppImage
+            gui/dist/*.deb
+            gui/dist/*.dmg
+
+  release:
+    name: Create GitHub Release
+    needs: build-gui
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          pattern: gui-*
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts/ -type f | sort
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

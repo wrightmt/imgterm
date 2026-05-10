@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>imgterm — MOTD Deployer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <div class="sidebar-brand">
+      <span class="brand-name">imgterm</span>
+      <span class="brand-sub">MOTD Deployer</span>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Image</div>
+      <div class="drop-zone" id="dropZone">
+        <img id="thumb" class="thumb hidden" alt="">
+        <div id="dropHint" class="drop-hint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span>Drop image or click to browse</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="path-row">
+        <input type="text" id="imagePath" readonly placeholder="No image selected" class="path-input">
+        <button id="browseBtn" class="btn-icon" title="Browse">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Render Settings</div>
+      <div class="field-row">
+        <div class="field half">
+          <label>Width <small>(cols)</small></label>
+          <input type="number" id="width" value="80" min="20" max="500">
+        </div>
+        <div class="field half">
+          <label>Max Rows</label>
+          <input type="number" id="rows" placeholder="auto" min="5" max="300">
+        </div>
+      </div>
+
+      <div class="adj-row" style="margin-top:4px">
+        <span class="adj-label">Custom color</span>
+        <input type="color" id="customColor" value="#00ffee" class="custom-color-pick">
+        <span class="adj-val" id="customColorHex" style="width:52px;font-size:10px">#00ffee</span>
+      </div>
+
+      <div class="adj-header">
+        <span class="adj-head-label">Adjustments</span>
+        <button id="adjReset" class="btn-link adj-reset-btn">Reset</button>
+      </div>
+      <div class="adj-row">
+        <span class="adj-label">Brightness</span>
+        <input type="range" id="adjBrightness" class="adj-slider" min="-100" max="100" value="0" step="1">
+        <span class="adj-val" id="adjBrightnessVal">0</span>
+      </div>
+      <div class="adj-row">
+        <span class="adj-label">Contrast</span>
+        <input type="range" id="adjContrast" class="adj-slider" min="-100" max="100" value="0" step="1">
+        <span class="adj-val" id="adjContrastVal">0</span>
+      </div>
+      <div class="adj-row">
+        <span class="adj-label">Saturation</span>
+        <input type="range" id="adjSaturation" class="adj-slider" min="-100" max="100" value="0" step="1">
+        <span class="adj-val" id="adjSaturationVal">0</span>
+      </div>
+      <div class="check-row">
+        <label class="check-label">
+          <input type="checkbox" id="adjInvert">
+          <span>Invert</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title-row">
+        <span class="panel-title">SSH Target</span>
+        <span id="sshIndicator" class="ssh-ind" title="Host and username required"></span>
+      </div>
+      <div class="field">
+        <label>System</label>
+        <select id="deployMode">
+          <option value="ubuntu-profile">Ubuntu / Debian — profile.d ✓ ANSI</option>
+          <option value="standard">Standard — write directly to path</option>
+          <option value="ubuntu-motd">Ubuntu / Debian — update-motd (no ANSI)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Host</label>
+        <input type="text" id="sshHost" placeholder="192.168.1.1 or hostname">
+        <div id="recentHostsList" class="recent-hosts"></div>
+      </div>
+      <div class="field-row">
+        <div class="field" style="flex:2">
+          <label>Username</label>
+          <input type="text" id="sshUser" placeholder="root">
+        </div>
+        <div class="field" style="flex:1">
+          <label>Port</label>
+          <input type="number" id="sshPort" value="22" min="1" max="65535">
+        </div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="sshPass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label id="remotePathLabel">Remote Path</label>
+        <input type="text" id="remotePath" value="/etc/motd.imgterm">
+        <div id="remotePathHint" class="field-hint hidden"></div>
+      </div>
+      <div class="check-row">
+        <label class="check-label">
+          <input type="checkbox" id="useSudo">
+          <span>Use sudo</span>
+        </label>
+      </div>
+      <div class="field" id="sudoPassField" style="display:none">
+        <label>Sudo Password <small>(blank = same as SSH)</small></label>
+        <input type="password" id="sudoPass" placeholder="leave blank to reuse SSH password">
+      </div>
+    </div>
+
+    <div id="status" class="status-bar"></div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── MAIN ──────────────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- Toolbar — always visible -->
+    <div class="main-toolbar">
+      <div class="tb-group">
+        <button id="previewBtn" class="tb-btn" disabled title="Render all styles for the selected image">Preview</button>
+        <button id="testSshBtn" class="tb-btn" title="Test SSH connection and show current MOTD">Test SSH</button>
+      </div>
+      <div class="tb-spacer"></div>
+      <div class="tb-group">
+        <button id="changeStyleBtn" class="tb-btn tb-ghost hidden">← Styles</button>
+        <button id="regenerateBtn"  class="tb-btn tb-ghost hidden">↺ Regen</button>
+      </div>
+      <div class="tb-div"></div>
+      <div class="tb-group">
+        <button id="exportBtn" class="tb-btn" disabled title="Export ANSI file and copy deploy instructions">Export…</button>
+        <button id="deployBtn" class="tb-btn tb-primary" disabled title="Deploy MOTD via SSH">Deploy</button>
+      </div>
+    </div>
+
+    <div class="preview-header">
+      <span class="preview-label" id="previewLabel">Select a style</span>
+      <span id="previewMeta" class="preview-meta"></span>
+    </div>
+
+    <!-- Style grid (shown until a style is chosen) -->
+    <div id="styleGridWrap" class="preview-scroll">
+      <div id="styleGrid" class="style-grid">
+        <div class="grid-placeholder">
+          Select an image then click <strong>Preview</strong> to compare all render modes.
+        </div>
+      </div>
+    </div>
+
+    <!-- Full-size preview (hidden until style chosen) -->
+    <div id="previewScroll" class="preview-scroll hidden">
+      <pre id="ansiPre" class="ansi-pre"></pre>
+    </div>
+
+    <!-- Console -->
+    <div class="console-panel" id="consolePanel">
+      <div class="console-header" id="consoleHeader">
+        <div class="con-header-left">
+          <svg id="consoleChevron" class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <span class="console-title">Console</span>
+        </div>
+        <button id="consoleClear" class="con-clear-btn" title="Clear output">Clear</button>
+      </div>
+      <div class="console-body" id="consoleBody">
+        <div class="console-output" id="consoleOutput"></div>
+        <div class="con-input-row">
+          <span class="con-prompt">&gt;</span>
+          <input type="text" id="consoleInput" class="con-input"
+            placeholder="Type input for active SSH session (Enter to send)…"
+            spellcheck="false" autocomplete="off" autocorrect="off">
+          <button id="consoleSend" class="con-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+</div><!-- /app -->
+
+<!-- ── EXPORT MODAL ──────────────────────────────────────────────────────── -->
+<div id="exportModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Export Complete</span>
+      <button id="modalClose" class="modal-close-btn">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="modal-saved-row">
+        <span class="modal-saved-label">Saved to</span>
+        <code id="exportedPath" class="modal-saved-path"></code>
+        <button class="copy-btn" data-src="exportedPath">Copy path</button>
+      </div>
+
+      <div class="instr-tabs">
+        <button class="instr-tab active" data-tab="ubuntu">Ubuntu / Debian</button>
+        <button class="instr-tab" data-tab="standard">Standard Linux</button>
+        <button class="instr-tab" data-tab="oneshot">One-liner</button>
+      </div>
+
+      <div id="tab-ubuntu" class="instr-panel active">
+        <p class="instr-note">
+          Uses <code>profile.d</code> — ANSI renders correctly because the script runs via the shell
+          after the PTY is established. Works on Ubuntu, Debian, and most Debian derivatives.
+        </p>
+        <pre class="instr-code" id="ubuntuInstr"></pre>
+        <button class="copy-btn" data-src="ubuntuInstr">Copy</button>
+      </div>
+
+      <div id="tab-standard" class="instr-panel">
+        <p class="instr-note">
+          Writes directly to <code>/etc/motd</code>. Works on most distributions.
+          On Ubuntu, dynamic MOTD (<code>update-motd</code>) may override this — use the Ubuntu tab instead.
+        </p>
+        <pre class="instr-code" id="standardInstr"></pre>
+        <button class="copy-btn" data-src="standardInstr">Copy</button>
+      </div>
+
+      <div id="tab-oneshot" class="instr-panel">
+        <p class="instr-note">
+          Deploy without a separate file transfer step — pipes the ANSI content directly over SSH.
+        </p>
+        <pre class="instr-code" id="oneshotInstr"></pre>
+        <button class="copy-btn" data-src="oneshotInstr">Copy</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

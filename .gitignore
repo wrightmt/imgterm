@@ -1,0 +1,17 @@
+# Rust build output
+/target/
+
+# Node / Electron
+gui/node_modules/
+gui/dist/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Temp files created by the app
+.imgterm_adj_*.png
+
+# Editor
+.vscode/
+*.swp
